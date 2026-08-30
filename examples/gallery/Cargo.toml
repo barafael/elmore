@@ -1,0 +1,17 @@
+[package]
+name = "gallery"
+edition.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+autobins = false
+
+# wasm-pack builds a cdylib; the entry point is `main` in src/main.rs,
+# annotated with `#[wasm_bindgen(start)]`.
+[lib]
+crate-type = ["cdylib", "rlib"]
+path = "src/main.rs"
+
+[dependencies]
+elmore = { path = "../../crates/elmore" }
+wasm-bindgen = "0.2"

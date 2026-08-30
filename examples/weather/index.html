@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>elmore — Weather</title>
+    <style>
+      /* Shared look & feel for the elmore examples: each app renders a
+         single root element into #root, which we present as a centered
+         card with room to breathe. */
+      :root {
+        --accent: #2563eb;
+        --accent-strong: #1d4ed8;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --surface: #f8fafc;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(180deg, #f1f5f9, #e2e8f0);
+        color: var(--ink);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+      #root { width: 100%; display: grid; justify-items: center; }
+      #root > * {
+        width: 100%;
+        max-width: 30rem;
+        padding: 1.75rem 2rem 2rem;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow:
+          0 1px 2px rgb(15 23 42 / 6%),
+          0 12px 32px rgb(15 23 42 / 10%);
+      }
+      .counter, .stopwatch, .login, .welcome, .game, .timer { max-width: 24rem; }
+      .chat, .survey, .weather { max-width: 32rem; }
+
+      h1 { margin: 0 0 1.25rem; font-size: 1.35rem; font-weight: 650; }
+
+      button {
+        font: inherit;
+        font-weight: 500;
+        color: var(--ink);
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+      }
+      button:hover:not(:disabled) {
+        background: #eff6ff;
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      button:disabled { opacity: 0.55; cursor: default; }
+
+      input, select, textarea {
+        font: inherit;
+        color: inherit;
+        padding: 0.55rem 0.75rem;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+      }
+      input:focus-visible, select:focus-visible, textarea:focus-visible {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgb(37 99 235 / 18%);
+      }
+
+      /* Primary actions and selected states. */
+      .new button, .composer button, .login > button, .survey > button,
+      .tab.active, .rating.on {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .new button:hover:not(:disabled), .composer button:hover:not(:disabled),
+      .login > button:hover:not(:disabled), .survey > button:hover:not(:disabled),
+      .tab.active:hover:not(:disabled), .rating.on:hover:not(:disabled) {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+        color: #fff;
+      }
+
+      /* counter */
+      .counter { text-align: center; }
+      .counter .value {
+        display: inline-block;
+        min-width: 4ch;
+        margin: 0 0.35rem;
+        font-size: 2rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+      .counter button { margin: 0 0.15rem; }
+
+      /* todo */
+      .new { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+      .new input { flex: 1; }
+      .items { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.5rem; }
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.45rem 0.45rem 0.45rem 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .item span { flex: 1; overflow-wrap: anywhere; }
+      .item button { padding: 0.25rem 0.55rem; font-size: 0.9rem; }
+      .item.done { background: #f0fdf4; border-color: #bbf7d0; color: var(--muted); }
+      .item.done span { text-decoration: line-through; }
+      .todo > p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+      /* chat */
+      .chat { display: flex; flex-direction: column; gap: 0.75rem; }
+      .feed {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        height: 22rem;
+        overflow-y: auto;
+        padding: 0.9rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .bubble {
+        max-width: 78%;
+        padding: 0.5rem 0.8rem;
+        background: #e2e8f0;
+        border-radius: 14px 14px 14px 4px;
+      }
+      .bubble .who {
+        display: block;
+        margin-bottom: 0.1rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .bubble.mine {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 14px 14px 4px 14px;
+      }
+      .bubble.mine .who { color: rgb(255 255 255 / 70%); }
+      .typing { min-height: 1.3rem; color: var(--muted); font-style: italic; }
+      .composer { display: flex; gap: 0.5rem; }
+      .composer input { flex: 1; }
+
+      /* stopwatch */
+      .stopwatch { text-align: center; }
+      .stopwatch .time {
+        margin: 0.25rem 0 1.25rem;
+        font-size: 3rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+      .stopwatch button { margin: 0 0.2rem; }
+
+      /* login */
+      .login { display: flex; flex-direction: column; gap: 1rem; }
+      .field { display: flex; flex-direction: column; gap: 0.35rem; }
+      .field label { font-size: 0.9rem; font-weight: 600; }
+      .field input { width: 100%; }
+      .field .error:empty { display: none; }
+      .error { margin: 0; color: #dc2626; font-size: 0.85rem; }
+      .login > button { margin-top: 0.25rem; padding-block: 0.6rem; }
+      .welcome { text-align: center; }
+      .welcome h1 { margin-bottom: 0.5rem; }
+      .welcome p { margin: 0; color: var(--muted); }
+
+      /* survey */
+      .tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; }
+      .tab { flex: 1; background: var(--surface); border-color: var(--border); }
+      .question {
+        margin-bottom: 1rem;
+        padding: 1rem 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+      }
+      .question h3 { margin: 0 0 0.6rem; font-size: 1rem; font-weight: 600; }
+      .ratings { display: flex; gap: 0.4rem; }
+      .rating { width: 2.75rem; padding-inline: 0; text-align: center; }
+      .colors { width: 100%; }
+      .survey > button { width: 100%; padding-block: 0.6rem; }
+      .summary {
+        margin-top: 1rem;
+        padding: 0.75rem 1.25rem;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 12px;
+      }
+      .summary-list { margin: 0; padding-left: 1.25rem; }
+      .summary-list li { margin: 0.2rem 0; }
+
+      /* weather */
+      .weather { display: flex; flex-direction: column; gap: 0.9rem; }
+      .now { margin: 0; font-size: 1.15rem; font-weight: 600; }
+      .raw {
+        margin: 0.75rem 0 0;
+        max-height: 16rem;
+        overflow: auto;
+        padding: 0.8rem 1rem;
+        background: #0f172a;
+        color: #e2e8f0;
+        border-radius: 10px;
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+      .weather .loading, .weather .error { margin: 0; }
+      .loading { color: var(--muted); font-style: italic; }
+      .weather > button { align-self: flex-start; }
+    
+      input[type="range"] {
+        padding: 0;
+        border: none;
+        background: transparent;
+        accent-color: var(--accent);
+      }
+      input[type="range"]:focus-visible { box-shadow: none; }
+
+      /* More primary actions. */
+      .app > button, .game > button, .timer .controls button:first-child {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .app > button:hover:not(:disabled), .game > button:hover:not(:disabled),
+      .timer .controls button:first-child:hover:not(:disabled) {
+        background: var(--accent-strong);
+        border-color: var(--accent-strong);
+        color: #fff;
+      }
+
+      /* playlist */
+      .playlist .controls { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+      .tracks { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: 0.5rem; }
+      .track {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.4rem 0.4rem 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+      .track .title { flex: 1; overflow-wrap: anywhere; }
+      .mover { padding: 0.25rem 0.55rem; font-size: 0.9rem; }
+      .playlist > p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+      /* tictactoe */
+      .game { text-align: center; }
+      .game .status { min-height: 1.6rem; margin: 0 0 1rem; color: var(--muted); font-weight: 500; }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 4.5rem);
+        gap: 0.4rem;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+      }
+      .cell {
+        width: 4.5rem;
+        height: 4.5rem;
+        padding: 0;
+        font-size: 2.25rem;
+        font-weight: 650;
+      }
+      .cell:disabled { opacity: 1; cursor: default; background: var(--surface); }
+      .cell.x { color: var(--accent); }
+      .cell.o { color: #dc2626; }
+
+      /* mixer */
+      .row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+      .row label { width: 2.5rem; font-weight: 600; }
+      .row input { flex: 1; }
+      .row output { width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+      .swatch {
+        height: 6rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        margin-bottom: 0.75rem;
+      }
+      .hex { font-family: ui-monospace, monospace; font-size: 1.1rem; font-weight: 600; }
+
+      /* timer */
+      .timer { text-align: center; }
+      .phase { min-height: 1.4rem; margin: 0 0 0.25rem; color: var(--muted); font-weight: 500; }
+      .timer .time {
+        margin: 0.25rem 0 0.75rem;
+        font-size: 4rem;
+        font-weight: 650;
+        font-variant-numeric: tabular-nums;
+      }
+      .bar {
+        height: 0.6rem;
+        background: var(--border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+      }
+      .bar > div { height: 100%; background: var(--accent); border-radius: 999px; }
+      .timer .controls { display: flex; justify-content: center; gap: 0.5rem; }
+      .timer .controls button:first-child { min-width: 6rem; }
+
+      /* notes */
+      .app { display: flex; flex-direction: column; gap: 1rem; }
+      .app > button { align-self: flex-start; }
+      .notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+      .note { display: flex; align-items: flex-start; gap: 0.5rem; }
+      .note textarea { flex: 1; min-height: 4.5rem; resize: vertical; }
+      .note button { padding: 0.25rem 0.55rem; }
+      .total { margin: 0; color: var(--muted); font-size: 0.9rem; }
+</style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import init from "./pkg/weather.js";
+      await init();
+    </script>
+  </body>
+</html>
