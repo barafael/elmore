@@ -69,18 +69,25 @@ build them all, serve once, browse:
 
 ```sh
 cd examples
-for d in */; do (cd "$d" && wasm-pack build --target web --out-dir pkg); done
-python3 -m http.server 8000
+mkdir -p _site
+for d in counter todo stopwatch weather survey chat login playlist notes tictactoe mixer timer gallery; do
+  (cd "$d" && trunk build --release --public-url "/$d/")
+  cp -r "$d/dist" "_site/$d"
+done
+cp index.html _site/
+python3 -m http.server 8000 --directory _site
 # open http://localhost:8000/  (redirects to the gallery)
 ```
 
-To run a single example, the same steps from its own directory:
+The same site deploys to GitHub Pages on every push to `main`
+(see `.github/workflows/deploy.yml`) — **https://barafael.github.io/elmore/**.
+
+To hack on a single example, `trunk serve` rebuilds on every save:
 
 ```sh
 cd examples/counter
-wasm-pack build --target web --out-dir pkg
-python3 -m http.server 8000
-# open http://localhost:8000/
+trunk serve
+# open the printed address (usually http://localhost:8080)
 ```
 
 ## Examples
@@ -110,4 +117,5 @@ chat example from nothing, one step at a time.
 ## Requirements
 
 - `rustup target add wasm32-unknown-unknown`
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/)
+- [trunk](https://trunkrs.dev) (`cargo install trunk --locked`)
+- the `wasm-bindgen-cli` matching the crate's version (`cargo install wasm-bindgen-cli --version 0.2.127 --locked`)

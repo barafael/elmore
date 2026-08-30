@@ -21,9 +21,7 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module">
-      import init from "./pkg/gallery.js";
-      await init();
-    </script>
+    <!-- Trunk builds and injects the wasm app; see .github/workflows/deploy.yml -->
+    <link data-trunk rel="rust" />
   </body>
 </html>

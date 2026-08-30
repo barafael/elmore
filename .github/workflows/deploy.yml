@@ -1,0 +1,83 @@
+name: Deploy gallery to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: pages-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+
+      - name: Install trunk
+        uses: jetli/trunk-action@v0.5.0
+        with:
+          version: latest
+
+      # Trunk shells out to the wasm-bindgen CLI, which must match the
+      # version of the wasm-bindgen crate exactly — read it from the lockfile
+      # so the two can never drift apart.
+      - name: Install wasm-bindgen-cli (matching Cargo.lock)
+        run: |
+          WBG=$(cargo metadata --format-version 1 \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version' \
+            | head -1)
+          echo "wasm-bindgen $WBG"
+          cargo install wasm-bindgen-cli --version "$WBG" --locked
+
+      # One trunk app per example; assembled into a static site with the
+      # gallery landing page at the root. Project pages are served from
+      # /<repo-name>/, so every app needs its public URL prefixed — derive
+      # the repo name instead of hardcoding it.
+      - name: Build examples
+        run: |
+          BASE="/${GITHUB_REPOSITORY#*/}"
+          mkdir -p _site
+          cp examples/index.html _site/
+          for d in counter todo stopwatch weather survey chat login \
+                   playlist notes tictactoe mixer timer gallery; do
+            (cd "examples/$d" && trunk build --release --public-url "$BASE/$d/")
+            cp -r "examples/$d/dist" "_site/$d"
+          done
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

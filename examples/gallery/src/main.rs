@@ -3,9 +3,10 @@
 //! examples, a stage that embeds the selected one.
 //!
 //! Each example stays a complete, isolated app (its own `#root`, runtime,
-//! and listeners) inside an iframe; the gallery never touches their DOM. Run
-//! from the `examples/` directory: build every example with wasm-pack, then
-//! serve the directory and open `/gallery/`.
+//! and listeners) inside an iframe; the gallery never touches their DOM.
+//! Built with trunk (see `.github/workflows/deploy.yml`, or the README's
+//! "Run the examples"); locally, serve the assembled `_site/` directory
+//! and open `/`.
 
 use wasm_bindgen::prelude::*;
 

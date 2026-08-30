@@ -1,3 +1,4 @@
 /target
 examples/*/pkg
 examples/*/dist
+examples/_site
