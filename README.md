@@ -118,8 +118,10 @@ table originally built with iced (`../halreslib-iced`): a filterable, sortable,
 paginated table over a static 2,000-row dataset. Everything the GUI port built
 by hand — row hover states, the sliding column chooser, the dark theme — is
 CSS here, and the dataset is pasted in verbatim as generated Rust
-(`include!("data.rs")`). Pure table logic lives in `src/table.rs` with unit
-tests that run natively.
+(`include!("data.rs")`). Clicking a row's title opens that resource's
+details page — title, link, health, tags, and provenance fields — and
+`< back to resources` restores the exact table state. Pure table logic
+lives in `src/table.rs` with unit tests that run natively.
 
 ```sh
 cd halreslib-elmore

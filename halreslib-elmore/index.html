@@ -122,6 +122,69 @@
 
       .pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
       .pagination .muted { color: var(--muted); font-size: 13px; }
+
+      /* The cell that opens a resource's details page. */
+      .title-link { color: #8db2ff; cursor: pointer; }
+      .title-link:hover { text-decoration: underline; }
+
+      /* The resource details page, shown instead of the table. */
+      .muted { color: var(--muted); }
+      .detail-page {
+        flex: 1;
+        overflow: auto;
+        width: 100%;
+        max-width: 900px;
+        margin: 0 auto;
+        padding-top: 2rem;
+        text-align: center;
+      }
+      .detail-page h1 {
+        margin: 0.75rem 0 0.25rem;
+        font-size: clamp(1.6rem, 5vw, 2.5rem);
+        overflow-wrap: anywhere;
+      }
+      .back-link {
+        display: block;
+        width: fit-content;
+        margin: 0 auto 1rem 0;
+        font-size: 13px;
+      }
+      .detail-url { margin: 0.25rem 0 0.5rem; overflow-wrap: anywhere; }
+      .detail-url a { color: #8db2ff; }
+      .detail-page .hp { font-weight: 600; }
+      .detail-tags, .detail-fields {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--row-alt-bg);
+        text-align: left;
+      }
+      .detail-tags h2 { margin: 0 0 0.6rem; font-size: 1rem; color: #c9cede; }
+      .detail-fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+      .detail-field { min-width: 0; }
+      .detail-label {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .detail-value { display: block; margin-top: 0.25rem; overflow-wrap: anywhere; }
+
+      .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+      .tag {
+        padding: 0.15rem 0.6rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--row-bg);
+        font-size: 13px;
+        color: #b8bfd0;
+      }
     </style>
   </head>
   <body>

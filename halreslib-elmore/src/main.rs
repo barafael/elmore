@@ -20,6 +20,13 @@ mod table;
 use model::{Column, Health, TablePreferences, Uri};
 include!("data.rs");
 
+/// Which page the app is showing. The table's state (filters, sort, page,
+/// column chooser) stays in [`Model`], so going back restores it exactly.
+enum Page {
+    Table,
+    Details(String),
+}
+
 #[derive(Clone)]
 enum Msg {
     /// Sort by a column. `multi` keeps existing sort rules (the iced
@@ -35,6 +42,10 @@ enum Msg {
     LastPage,
     ToggleColumn(Column),
     ToggleColumnChooser,
+    /// Open a resource's details page (via its uuid).
+    Open(String),
+    /// Return from the details page to the table.
+    Back,
 }
 
 struct Model {
@@ -46,6 +57,7 @@ struct Model {
     show_column_chooser: bool,
     global_query: String,
     page: usize,
+    active: Page,
 }
 
 impl Default for Model {
@@ -57,6 +69,7 @@ impl Default for Model {
             show_column_chooser: false,
             global_query: String::new(),
             page: 0,
+            active: Page::Table,
         }
     }
 }
@@ -88,11 +101,22 @@ impl App for Halreslib {
             Msg::LastPage => model.page = usize::MAX,
             Msg::ToggleColumn(column) => model.preferences.toggle_column(column),
             Msg::ToggleColumnChooser => model.show_column_chooser = !model.show_column_chooser,
+            Msg::Open(uuid) => model.active = Page::Details(uuid),
+            Msg::Back => model.active = Page::Table,
         }
         Command::none()
     }
 
     fn view(&self, model: &Model) -> Html<Msg> {
+        match &model.active {
+            Page::Table => table_view(model),
+            Page::Details(uuid) => detail_view(model, uuid),
+        }
+    }
+}
+
+/// The filterable, sortable, paginated table.
+fn table_view(model: &Model) -> Html<Msg> {
         let rows = table::filter_and_sort(
             &model.resources,
             &model.preferences,
@@ -211,7 +235,7 @@ impl App for Halreslib {
             Html::button().text("Last").disabled(at_end).on_click(|| Msg::LastPage),
             Html::span()
                 .class("muted")
-                .text(format!("Showing {} of {} rows", page_rows.len(), rows.len())),
+.text(format!("Showing {} of {} rows", page_rows.len(), rows.len())),
         ]);
 
         Html::div()
@@ -220,11 +244,18 @@ impl App for Halreslib {
     }
 }
 
-/// One body cell. The health column gets a colored status dot-text; the rest
-/// are plain text.
+/// One body cell. The title opens the resource's details page; the health
+/// column gets a colored status dot-text; the rest are plain text.
 fn cell(column: Column, uri: &Uri) -> Html<Msg> {
     let class = if column.is_compact() { "td compact" } else { "td" };
     let content = match column {
+        Column::Title => {
+            let uuid = uri.uri_uuid.clone();
+            Html::span()
+                .class("title-link")
+                .text(column.value(uri))
+                .on_click(move || Msg::Open(uuid.clone()))
+        }
         Column::Health => {
             let status = uri.live_status;
             let hp_class = match status {
@@ -237,6 +268,76 @@ fn cell(column: Column, uri: &Uri) -> Html<Msg> {
         _ => Html::span().text(column.value(uri)),
     };
     Html::div().class(class).child(content)
+}
+
+/// The resource details page, mirroring `halreslib-dioxus`'s `ResourceDetail`
+/// route (minus the server-side tag editor, which the static dataset can't
+/// persist). Clicking a title in the table opens it; `< back to resources`
+/// restores the table with exactly the state it had.
+fn detail_view(model: &Model, uuid: &str) -> Html<Msg> {
+    let Some(uri) = model.resources.iter().find(|uri| uri.uri_uuid == uuid) else {
+        return Html::div().class("rt").child(
+            Html::div().class("detail-page").children([
+                Html::h1().text("Resource not found"),
+                Html::button().text("Back to resources").on_click(|| Msg::Back),
+            ]),
+        );
+    };
+
+    let status_class = match uri.live_status {
+        Health::Available => "hp ok",
+        Health::Unavailable => "hp bad",
+        Health::Unknown => "hp unknown",
+    };
+
+    let tags: Html<Msg> = if uri.tags.is_empty() {
+        Html::span().class("muted").text("No tags")
+    } else {
+        Html::div()
+            .class("tag-list")
+            .children(uri.tags.iter().map(|tag| Html::span().class("tag").text(tag.clone())))
+    };
+
+    let fields = [
+        ("Domain", uri.host.clone().unwrap_or_default()),
+        ("Scheme", uri.scheme.clone()),
+        ("Path", uri.path.clone().unwrap_or_default()),
+        ("Description", uri.auto_descr.clone().unwrap_or_default()),
+        ("Manual description", uri.man_descr.clone().unwrap_or_default()),
+        ("Identifier", uri.uri_uuid.clone()),
+        ("Created by", uri.crea_user.clone().unwrap_or_default()),
+        ("Created at", uri.crea_time.clone().unwrap_or_default()),
+        ("Modified by", uri.modi_user.clone().unwrap_or_default()),
+        ("Modified at", uri.modi_time.clone().unwrap_or_default()),
+    ];
+
+    Html::div().class("rt").child(
+        Html::div().class("detail-page").children([
+            Html::button()
+                .class("back-link")
+                .text("< back to resources")
+                .on_click(|| Msg::Back),
+            Html::h1().text(uri.title.clone().unwrap_or_else(|| uri.url.clone())),
+            Html::p().class("detail-url").child(
+                Html::a()
+                    .attr("href", uri.url.clone())
+                    .attr("target", "_blank")
+                    .attr("rel", "noopener noreferrer")
+                    .text(uri.url.clone()),
+            ),
+            Html::span().class(status_class).text(uri.live_status.label()),
+            Html::section().class("detail-tags").children([
+                Html::h2().text("Tags"),
+                tags,
+            ]),
+            Html::section().class("detail-fields").children(fields.iter().map(|(label, value)| {
+                Html::div().class("detail-field").children([
+                    Html::span().class("detail-label").text(*label),
+                    Html::span().class("detail-value").text(value.clone()),
+                ])
+            })),
+        ]),
+    )
 }
 
 /// CSS `grid-template-columns` matching the iced layout: compact columns are

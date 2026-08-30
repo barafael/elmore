@@ -52,6 +52,7 @@ pub enum Tag {
     Form,
     Iframe,
     Nav,
+    A,
 }
 
 impl Tag {
@@ -81,6 +82,7 @@ impl Tag {
             Form => "form",
             Iframe => "iframe",
             Nav => "nav",
+            A => "a",
         }
     }
 }
@@ -182,6 +184,11 @@ where
     }
     pub fn nav() -> Self {
         Self::element(Tag::Nav)
+    }
+    /// An anchor. Give it an `href` via [`.attr`](Html::attr) — matching the
+    /// exact attribute value a normal link requires.
+    pub fn a() -> Self {
+        Self::element(Tag::A)
     }
 
     fn element(tag: Tag) -> Self {
@@ -450,5 +457,6 @@ mod tests {
         assert_eq!(Tag::Select.name(), "select");
         assert_eq!(Tag::Option.name(), "option");
         assert_eq!(Tag::Form.name(), "form");
+        assert_eq!(Tag::A.name(), "a");
     }
 }
