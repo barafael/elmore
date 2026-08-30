@@ -2,3 +2,5 @@
 examples/*/pkg
 examples/*/dist
 examples/_site
+halreslib-elmore/dist
+halreslib-elmore/target

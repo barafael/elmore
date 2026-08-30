@@ -111,6 +111,25 @@ Rendering a list? Map it into `.children(...)`, and give each item `.key(id)`
 so reorders move DOM nodes instead of rewriting them — focus and identity ride
 along.
 
+## A real app: halreslib-elmore
+
+[`halreslib-elmore/`](halreslib-elmore/) is a full port of the HaL resource
+table originally built with iced (`../halreslib-iced`): a filterable, sortable,
+paginated table over a static 2,000-row dataset. Everything the GUI port built
+by hand — row hover states, the sliding column chooser, the dark theme — is
+CSS here, and the dataset is pasted in verbatim as generated Rust
+(`include!("data.rs")`). Pure table logic lives in `src/table.rs` with unit
+tests that run natively.
+
+```sh
+cd halreslib-elmore
+trunk serve
+# open the printed address
+```
+
+It deploys alongside the gallery as its own sub page:
+**https://barafael.github.io/elmore/halreslib-elmore/**.
+
 New to the Elm architecture? Read [`TUTORIAL.md`](TUTORIAL.md) — it builds the
 chat example from nothing, one step at a time.
 

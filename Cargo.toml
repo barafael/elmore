@@ -14,7 +14,7 @@ members = [
     "examples/mixer",
     "examples/timer",
     "examples/notes",
-    "examples/gallery",
+    "halreslib-elmore",
 ]
 
 [workspace.package]
@@ -24,3 +24,10 @@ license = "MIT OR Apache-2.0"
 
 [profile.release]
 opt-level = "s"
+
+# The generated data.rs in halreslib-elmore pastes ~2,000 fat struct literals
+# into one `vec![]`; even `opt-level = "s"` inlining across them OOMs rustc
+# (see ../halreslib-iced, which hit the same wall). The dataset is plain data
+# — it needs no codegen.
+[profile.release.package.halreslib-elmore]
+opt-level = 0

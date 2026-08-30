@@ -64,6 +64,15 @@ jobs:
             cp -r "examples/$d/dist" "_site/$d"
           done
 
+      # Not part of the gallery (it lives outside examples/), but deployed
+      # alongside it as its own sub page.
+      - name: Build halreslib-elmore
+        run: |
+          BASE="/${GITHUB_REPOSITORY#*/}"
+          (cd halreslib-elmore && trunk build --release \
+            --public-url "$BASE/halreslib-elmore/")
+          cp -r halreslib-elmore/dist _site/halreslib-elmore
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>halreslib — elmore</title>
+    <style>
+      /* The iced app's dark table theme, expressed as CSS. */
+      :root {
+        --line: #4c5466;
+        --header-bg: #282b35;
+        --table-bg: #121419;
+        --row-bg: #1c1f26;
+        --row-alt-bg: #171a21;
+        --row-hover-bg: #2e3342;
+        --ink: #e6e8ee;
+        --muted: #999999;
+        --ok: #33cc66;
+        --bad: #e64d4d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: #0f1114;
+        color: var(--ink);
+        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .rt { display: flex; flex-direction: column; gap: 12px; height: calc(100vh - 40px); }
+
+      button {
+        font: inherit;
+        color: var(--ink);
+        background: var(--row-bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      button:hover:not(:disabled) { background: var(--row-hover-bg); border-color: #7a86a0; }
+      button:disabled { opacity: 0.4; cursor: default; }
+
+      input {
+        font: inherit;
+        color: var(--ink);
+        background: var(--row-alt-bg);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.45rem 0.7rem;
+      }
+      input:focus-visible {
+        outline: none;
+        border-color: #7a86a0;
+        box-shadow: 0 0 0 3px rgb(122 134 160 / 25%);
+      }
+
+      .toolbar { display: flex; align-items: center; gap: 12px; }
+      .spacer { flex: 1; }
+      .search { width: 320px; }
+      .cols.on { background: var(--row-hover-bg); border-color: #7a86a0; }
+
+      /* The sliding column chooser: the panel stays in the tree (element
+         identity makes this transition run); .open grows it from 0fr. */
+      .chooser { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.25s ease; }
+      .chooser.open { grid-template-rows: 1fr; }
+      .chooser-inner { overflow: hidden; min-height: 0; }
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--row-alt-bg);
+        padding: 10px 12px;
+      }
+      .chooser-title { font-size: 13px; font-weight: 600; color: #c9cede; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+      .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #b8bfd0; cursor: pointer; }
+      .chip input { accent-color: #4f7cff; margin: 0; }
+
+      .tablewrap {
+        flex: 1;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--table-bg);
+      }
+      .thead {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        display: grid;
+        gap: 8px;
+        padding: 8px;
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--line);
+      }
+      .th { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding-right: 8px; }
+      .th-top { display: flex; align-items: center; gap: 6px; }
+      .th-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #c9cede;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .ind { padding: 0.05rem 0.45rem; font-size: 12px; line-height: 1.4; border-radius: 6px; }
+      .filter { width: 100%; padding: 0.3rem 0.5rem; font-size: 13px; }
+
+      .tbody { display: flex; flex-direction: column; }
+      .tr { display: grid; align-items: start; padding: 8px; border-bottom: 1px solid #232733; background: var(--row-bg); }
+      .tbody .tr:nth-child(even) { background: var(--row-alt-bg); }
+      .tbody .tr:hover { background: var(--row-hover-bg); }
+      .td { min-width: 0; padding-right: 8px; overflow-wrap: break-word; }
+      .td.compact { text-align: center; }
+      .hp.ok { color: var(--ok); }
+      .hp.bad { color: var(--bad); }
+      .hp.unknown { color: var(--muted); }
+
+      .nohits { padding: 24px; color: var(--muted); text-align: center; }
+
+      .pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+      .pagination .muted { color: var(--muted); font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import init from "./pkg/halreslib_elmore.js";
+      await init();
+    </script>
+  </body>
+</html>

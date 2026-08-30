@@ -88,14 +88,17 @@ impl Tag {
 /// A bound event handler attached to an element.
 ///
 /// `Simple` events (click, submit) fire with no payload. `WithValue` events
-/// (input, change) carry the element's current value as a `String`. `Key`
-/// events (key up) carry the pressed key's name (e.g. `"Enter"`, `"a"`).
+/// (input, change) carry the element's current value as a `String`. `Checked`
+/// events (change on a checkbox or radio) carry the new checked state as a
+/// `bool`. `Key` events (key up) carry the pressed key's name (e.g.
+/// `"Enter"`, `"a"`).
 ///
 /// Handlers sit behind a `Box` and are *moved out* of the tree by the render
 /// that arms them, so nothing needs shared ownership of a closure.
 pub enum Bind<Msg> {
     Simple(Event, Box<dyn Fn() -> Msg>),
     WithValue(Event, Box<dyn Fn(String) -> Msg>),
+    Checked(Event, Box<dyn Fn(bool) -> Msg>),
     Key(Event, Box<dyn Fn(String) -> Msg>),
 }
 
@@ -247,6 +250,17 @@ where
         }
     }
 
+    /// Shorthand for the `checked` attribute of checkboxes and radios. Only
+    /// emits the attribute when `true`. On a live element the runtime syncs
+    /// the `checked` *property* to match, exactly like `value`.
+    pub fn checked(self, value: bool) -> Self {
+        if value {
+            self.attr("checked", "")
+        } else {
+            self
+        }
+    }
+
     /// Give this element a **key**: a stable identity among its siblings
     /// across renders.
     ///
@@ -296,6 +310,13 @@ where
     /// Attach a change handler (e.g. `<select>`).
     pub fn on_change(mut self, f: impl Fn(String) -> Msg + 'static) -> Self {
         self.binds.push(Bind::WithValue(Event::Change, Box::new(f)));
+        self
+    }
+
+    /// Attach a toggle handler to a checkbox or radio input. Fires on
+    /// `change`; the callback receives the new checked state.
+    pub fn on_toggle(mut self, f: impl Fn(bool) -> Msg + 'static) -> Self {
+        self.binds.push(Bind::Checked(Event::Change, Box::new(f)));
         self
     }
 
@@ -357,6 +378,33 @@ mod tests {
             }
             _ => panic!("expected an element"),
         }
+    }
+
+    #[test]
+    fn checked_false_emits_no_attribute() {
+        let html: Html<()> = Html::input().checked(false);
+        match html.node {
+            Node::Element(_, attrs, _) => assert!(attrs.is_empty()),
+            _ => panic!("expected an element"),
+        }
+    }
+
+    #[test]
+    fn checked_true_sets_attribute() {
+        let html: Html<()> = Html::input().checked(true);
+        match html.node {
+            Node::Element(_, attrs, _) => {
+                assert_eq!(attrs.len(), 1);
+                assert_eq!(attrs[0].name, "checked");
+            }
+            _ => panic!("expected an element"),
+        }
+    }
+
+    #[test]
+    fn toggle_handler_is_attached() {
+        let html = Html::input().on_toggle(|_| ());
+        assert_eq!(html.binds.len(), 1);
     }
 
     #[test]

@@ -273,14 +273,22 @@ fn sync_attrs(el: &Element, new: &[Attr], old: Option<&[Attr]>) {
     }
 }
 
-/// Sync the `value` *property* of form fields. Setting the attribute would be
-/// ignored on a live element once the user has typed; the property is the
-/// truth. Equal values are skipped so a focused field's caret never moves.
+/// Sync the property-backed attributes of form fields: `value` (inputs,
+/// textareas, selects) and `checked` (checkboxes, radios). Setting the
+/// attribute would be ignored on a live element once the user has interacted
+/// with it; the property is the truth.
+fn sync_props(el: &Element, attrs: &[Attr], old_attrs: Option<&[Attr]>) {
+    sync_value_prop(el, attrs, old_attrs);
+    sync_checked_prop(el, attrs, old_attrs);
+}
+
+/// Sync the `value` *property* of form fields. Equal values are skipped so a
+/// focused field's caret never moves.
 ///
 /// A field whose `value` attribute just disappeared is cleared — the stale
 /// property would otherwise keep showing ghost text — but a field that was
 /// never controlled (no `value` in either tree) is left alone.
-fn sync_props(el: &Element, attrs: &[Attr], old_attrs: Option<&[Attr]>) {
+fn sync_value_prop(el: &Element, attrs: &[Attr], old_attrs: Option<&[Attr]>) {
     fn find_value(attrs: &[Attr]) -> Option<&Attr> {
         attrs.iter().find(|a| a.name == "value")
     }
@@ -296,6 +304,30 @@ fn sync_props(el: &Element, attrs: &[Attr], old_attrs: Option<&[Attr]>) {
     };
     if let Some(field) = as_field(el) {
         set_field_value(field, &want);
+    }
+}
+
+/// Sync the `checked` *property* of checkbox/radio inputs, with the same
+/// controlled semantics as `value`: the attribute present means checked, an
+/// attribute that just disappeared unchecks, and an input never controlled
+/// in either tree is untouched.
+fn sync_checked_prop(el: &Element, attrs: &[Attr], old_attrs: Option<&[Attr]>) {
+    fn has_checked(attrs: &[Attr]) -> bool {
+        attrs.iter().any(|a| a.name == "checked")
+    }
+    let Ok(input) = el.clone().dyn_into::<HtmlInputElement>() else {
+        return;
+    };
+    let want = if has_checked(attrs) {
+        true
+    } else {
+        if !old_attrs.is_some_and(|old| has_checked(old)) {
+            return;
+        }
+        false
+    };
+    if input.checked() != want {
+        input.set_checked(want);
     }
 }
 
@@ -380,6 +412,9 @@ fn arm_handlers<A: App>(el: &Element, binds: Vec<Bind<A::Message>>, state: &'sta
             Bind::WithValue(event, f) => {
                 row.push((event, Box::new(move |ev: &Event| state.push(f(target_value(ev))))));
             }
+            Bind::Checked(event, f) => {
+                row.push((event, Box::new(move |ev: &Event| state.push(f(target_checked(ev))))));
+            }
             Bind::Key(event, f) => {
                 row.push((event, Box::new(move |ev: &Event| state.push(f(key_of(ev))))));
             }
@@ -437,6 +472,20 @@ fn target_value(ev: &Event) -> String {
         return String::new();
     };
     as_field(&el).map(|f| field_value(&f)).unwrap_or_default()
+}
+
+/// Read the `.checked` of the event target when it is a checkbox-style input.
+fn target_checked(ev: &Event) -> bool {
+    let target = match ev.target() {
+        Some(t) => t,
+        None => return false,
+    };
+    let Ok(el) = target.dyn_into::<Element>() else {
+        return false;
+    };
+    el.dyn_ref::<HtmlInputElement>()
+        .map(|input| input.checked())
+        .unwrap_or(false)
 }
 
 /// Read the name of the released key (`KeyboardEvent.key`).
